@@ -52,18 +52,16 @@ namespace AzureFunctionsPGPDecrypt
 
         private static async Task<Stream> DecryptAndVerifyAsync(Stream inputStream, string privateKey, string publicKeyVerify, string passPhrase)
         {
-            using (PGP pgp = new PGP())
-            {
-                Stream outputStream = new MemoryStream();
+            using Stream privateKeyStream = privateKey.ToStream();
+            using Stream publicKeyVerifyStream = publicKeyVerify.ToStream();
+            using PGP pgp = new PGP(new EncryptionKeys(publicKeyVerifyStream, privateKeyStream, passPhrase));
+            Stream outputStream = new MemoryStream();
 
-                using (inputStream)
-                using (Stream privateKeyStream = privateKey.ToStream())
-                using (Stream publicKeyVerifyStream = publicKeyVerify.ToStream())
-                {
-                    await pgp.DecryptStreamAndVerifyAsync(inputStream, outputStream, publicKeyVerifyStream, privateKeyStream, passPhrase);
-                    outputStream.Seek(0, SeekOrigin.Begin);
-                    return outputStream;
-                }
+            using (inputStream)
+            {
+                await pgp.DecryptStreamAndVerifyAsync(inputStream, outputStream);
+                outputStream.Seek(0, SeekOrigin.Begin);
+                return outputStream;
             }
         }
     }
